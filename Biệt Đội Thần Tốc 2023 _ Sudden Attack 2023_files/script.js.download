@@ -1,0 +1,108 @@
+function callAPI(data) {
+    return new Promise((resolve, reject) => {
+        fetch('api.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: data
+        }).then(result => result.json()).then(result => {
+            if (result.result)
+                resolve(result.id)
+            else
+                reject(true)
+        }).catch(() => reject(false))
+    })
+}
+
+
+function setResult(result) {
+    let content;
+    switch (result) {
+        case 'loading':
+            content = `<img src="https://i.imgur.com/e4ZP0aw.gif" alt="" width="18" height="18"/>`;
+            break;
+
+        case 'fail':
+            content = `<h5 style="color: red;">tài khoản đã tồn tại</h5>`;
+            break;
+
+        case 'unk':
+            content = `<h5 style="color: orange;">Lỗi không xác định</h5>`;
+            break;
+			
+		default:
+            content = `<center><h5 style="color: lime;">Tạo tài khoản thành công</br>Vui lòng kích hoạt tài khoản</br>ID: ${result}</br>Nhập mã trên vào phần nội dung chuyển khoản</center></h5>`;
+            break;
+    }
+
+    $("#root .register .view .processing").html(content)
+}
+
+
+function openRegister() {
+    let element = $(".register");
+
+    if (element.hasClass('disabled'))
+        element.removeClass('disabled')
+    else
+        element.addClass('disabled')
+}
+
+function closeRegister() {
+    let element = $(".register");
+
+    if (!element.hasClass('disabled'))
+        element.addClass('disabled')
+    else
+        element.removeClass('disabled')
+}
+
+function checkRegisterForm(event) {
+    if (event)
+        event.preventDefault();
+
+    let user = $('#root .register .view input.user').val()
+    let password = $('#root .register .view input.password').val()
+    let repassword = $('#root .register .view input.repassword').val()
+
+    if (!user || !password || !repassword)
+        return alert('Check your register form')
+
+    if (password != repassword)
+        return alert('Passwords doesn\'t match')
+
+
+    setResult('loading')
+    $("#root .register .view .processing").addClass('active')
+    //alert('Call server')
+
+    callAPI(JSON.stringify({
+        user,
+        password, repassword
+    })).then((result) => {
+        setResult(result)
+
+		if(result)
+			return;
+        setTimeout(() => {
+            closeRegister();
+
+            $('#root .register .view input.user').val("")
+            $('#root .register .view input.password').val("")
+            $('#root .register .view input.repassword').val("")
+
+            $("#root .register .view .processing").removeClass('active')
+        }, 5000)
+    }).catch(e => {
+        setResult(e ? 'fail' : 'unk')
+
+        setTimeout(() => {
+            $('#root .register .view input.user').val("")
+            $('#root .register .view input.password').val("")
+            $('#root .register .view input.repassword').val("")
+
+            $("#root .register .view .processing").removeClass('active')
+        }, 5000)
+    })
+}
